@@ -164,7 +164,9 @@ function createPeerConnection() {
     alert('Cannot create RTCPeerConnection object.');
     return;
   }
-
+  pc.oniceconnectionstatechange = function () {
+    trace('IceConnectionStateChanged: '+ this.iceConnectionState);
+  }
   pc.onaddstream = handleRemoteStreamAdded;
   pc.onremovestream = handleRemoteStreamRemoved;
 

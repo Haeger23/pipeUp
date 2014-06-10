@@ -21,9 +21,25 @@
       },
       create: function (socketConf) {
         this.socketConf = socketConf;
-        var pc = this.pc = new RTCPeerConnection(this.pc_config, this.pc_constraints);
 
-        pc.oncecandidate = this.onIceCandidate;
+        // to fix scope problems
+        RTCPeerConnection.prototype.parentScope = this;
+
+        var pc = this.pc = new RTCPeerConnection(this.pc_config, this.pc_constraints);
+        pc.onicecandidate = function (event) {
+          console.log('handleIceCandidate event: ', event);
+          if (event.candidate) {
+            sendMessage({
+              type: 'candidate',
+              label: event.candidate.sdpMLineIndex,
+              id: event.candidate.sdpMid,
+              candidate: event.candidate.candidate}, this.parentScope.getSocketId()); // todo find ich nicht schön die SocketId extra dafür in PC zu speichern
+          } else {
+            console.log('End of candidates.');
+          }
+        };
+
+        pc.oniceconnectionstatechange = this.onIceConnectionStateChange;
         console.log('Created RTCPeerConnnection with:\n' +
           '  config: \'' + JSON.stringify(this.pc_config) + '\';\n' +
           '  constraints: \'' + JSON.stringify(this.pc_constraints) + '\'.');
@@ -35,7 +51,8 @@
         this.createOffer();
       },
       createSendChannel: function () {
-        var sc = this.sendChannel= this.pc.createDataChannel(this.socketConf.socketId, {reliable: true});
+        var sc = this.sendChannel = this.pc.createDataChannel(this.getSocketId(), {reliable: true});
+        sc.parentScope = this;
         sc.onmessage = this.handleMessage;
         trace('Created send data channel');
 
@@ -45,30 +62,31 @@
       createOffer: function () {
         //pc.addStream(localStream);
         var constraints = {'optional': [], 'mandatory': {}},
-            self = this;
+            ps = this;
         constraints = this.mergeConstraints(constraints, this.sdpConstraints);
         console.log('Sending offer to peer, with constraints: \n' +
           '  \'' + JSON.stringify(constraints) + '\'.');
-        this.pc.createOffer(function(sessionDescription) {
+        this.pc.createOffer(function (sessionDescription) {
           // Set Opus as the preferred codec in SDP if Opus is present.
-          sessionDescription.sdp = self.preferOpus(sessionDescription.sdp);
-          self.pc.setLocalDescription(sessionDescription);
-          sendMessage(sessionDescription, self.getSocketId());
+          sessionDescription.sdp = ps.preferOpus(sessionDescription.sdp);
+          ps.pc.setLocalDescription(sessionDescription);
+          sendMessage(sessionDescription, ps.getSocketId());
         }, null, constraints);
       },
       sendChannelStateOpen: function () {
+        var ps = this.parentScope;
+
         trace('Send channel state is: open');
         enableMessageInterface(true);
-        clientsList.innerHTML = clientsList.innerHTML + '<li id="' + this.getSocketId() + '">' + this.getUsername() + '</li>';
-        this.userDomEle = document.getElementById(this.getSocketId());
-        this.userDomEle.onclick = this.getVideo;
+        clientsList.innerHTML = clientsList.innerHTML + '<li id="' + ps.getSocketId() + '">' + ps.getUsername() + '</li>';
+        this.userDomEle = document.getElementById(ps.getSocketId());
+        this.userDomEle.onclick = function () {
+          console.log('ask for Video from: ' + ps.getUsername());
+          sendMessage('getVideo', ps.getSocketId());
+        };
       },
       sendChannelStateClose: function () {
         trace('Send channel state is: closed');
-      },
-      getVideo: function () {
-          console.log('ask for Video from: ' + this.getUsername());
-          sendMessage('getVideo', this.getSocketId());
       },
       handleRemoteStreamAdded: function (event) {
         console.log('Remote stream added.');
@@ -82,17 +100,9 @@
         trace('Received message: ' + event.data);
         receiveTextarea.value = receiveTextarea.value + this.label + ': ' + event.data + '\\n';
       },
-      onIceCandidate: function (event) {
-        console.log('handleIceCandidate event: ', event);
-        if (event.candidate) {
-          socket.emit('messageTo', {
-            type: 'candidate',
-            label: event.candidate.sdpMLineIndex,
-            id: event.candidate.sdpMid,
-            candidate: event.candidate.candidate}, this.getSocketId);
-        } else {
-          console.log('End of candidates.');
-        }
+      onIceConnectionStateChange: function () {
+        console.log(this.parentScope.getSocketId());
+        trace('IceConnectionStateChanged: '+ this.iceConnectionState);
       },
       addIceCandidate: function (msg) {
         var candidate = new RTCIceCandidate({sdpMLineIndex:msg.label, candidate:msg.candidate});

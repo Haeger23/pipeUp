@@ -1,4 +1,4 @@
-// WebRTC Project for a better UX in Q&A sessions after presentations. No need for giving around a microphone anymore. 
+// WebRTC Project for a better UX in Q&A sessions after presentations. No need for giving around a microphone anymore.
 
 'use strict'; //ECMA5 feature to gain more exceptions
 
@@ -93,7 +93,7 @@ function sendData() {
   for (var peer in peers) {
     console.log(peers[peer]);
     peers[peer].sendChannel.send(data);
-    trace('Sent data: ' + data + ' to ' + getUsername(peer));
+    trace('Sent data: ' + data + ' to ' + peers[peer].getUsername());
   }
 }
 
