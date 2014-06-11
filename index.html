@@ -3,34 +3,41 @@
     <head>
         <meta name='viewport' content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1'>
         <title>WebRTC client</title>
-        <link rel='stylesheet' href='css/main.css' />
+        <link rel='stylesheet' href='css/main.css'/>
     </head>
 
     <body>
 
-        <div id='container'>
+    <div id='container'>
 
-          <div id='videos'>
+        <div id='videos'>
             <video id='localVideo' autoplay muted></video>
             <video id='remoteVideo' autoplay></video>
-          </div>
-
-          <div id='textareas'>
-                <textarea id="dataChannelSend" disabled></textarea>
-                <textarea id="dataChannelReceive" disabled></textarea>
-            </div>
-
-          <button id="sendButton" disabled>Send</button>
-
-          <label for="username">Benutzername</label>
-          <input type="text" name="username" id="username" value="Hans">
-          <button id="loginBtn">Anmelden</button>
-
         </div>
 
-        <script src='js/lib/socket.io.js'></script>
-        <script src='js/lib/adapter.js'></script>
-        <script src='js/client.js'></script>
+        <label for="username">Benutzername</label>
+        <input type="text" name="username" id="username" value="Hans">
+        <button id="loginBtn">Anmelden</button>
+
+        <div class="content">
+            <div id="chat">
+
+                <div id="chatContent">
+                    <p data-peer="afdsghjk234567"><span class="color1">Pusemuckel: </span>Das ist mein BEitrag</p>
+                </div>
+
+                <input type="text" id="dataChannelSend" disabled>
+
+                <button id="sendButton" disabled>Nachricht senden</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src='js/lib/jquery-2.1.1.min.js'></script>
+    <script src='js/lib/socket.io.js'></script>
+    <script src='js/lib/adapter.js'></script>
+    <script src='js/client.js'></script>
 
     </body>
 </html>

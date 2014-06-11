@@ -4,7 +4,7 @@ function Peer() {
     sendChannel: null,
     socketConf: null,
     userDomEle: null,
-    constraints: {audio: false, video: true},
+    constraints: {audio: true, video: true},
     pc_config: {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
     pc_constraints: {
       'optional': [
@@ -81,12 +81,12 @@ function Peer() {
 
       trace('Send channel state is: open');
       enableMessageInterface(true);
-      clientsList.innerHTML = clientsList.innerHTML + '<li id="' + ps.getSocketId() + '">' + ps.getUsername() + '</li>';
-      this.userDomEle = document.getElementById(ps.getSocketId());
-      this.userDomEle.onclick = function () {
+      clientsList.append('<li data-peer="' + this.parentScope.getSocketId() + '" class="' + this.parentScope.getPeerColor() + '">' + this.parentScope.getUsername() + '</li>');
+      this.userDomEle = $('li[data-peer="' + ps.getSocketId() + '"]');
+      this.userDomEle.click(function () {
         console.log('ask for Video from: ' + ps.getUsername());
         sendMessage('getVideo', ps.getSocketId());
-      };
+      });
     },
     sendChannelStateClose: function () {
       trace('Send channel state is: closed');
@@ -101,7 +101,7 @@ function Peer() {
     },
     handleMessage: function (event) {
       trace('Received message: ' + event.data);
-      receiveTextarea.value = receiveTextarea.value + this.label + ': ' + event.data + '\\n';
+      chatContent.append('<p data-peer="' + this.parentScope.getSocketId() + '"><span class="' + this.parentScope.getPeerColor() + '">' + this.parentScope.getUsername() + ':</span> ' + event.data + '</p>');
     },
     onIceConnectionStateChange: function () {
       console.log(this.parentScope.getSocketId());
@@ -135,6 +135,9 @@ function Peer() {
     },
     getSocketId: function () {
       return this.socketConf.socketId;
+    },
+    getPeerColor: function () {
+      return this.socketConf.color;
     },
     mergeConstraints: function (cons1, cons2) {
       var merged = cons1;

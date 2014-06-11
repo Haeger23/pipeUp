@@ -1,11 +1,11 @@
 'use strict'; //ECMA5 feature to gain more exceptions
 
 var sendChannel;
-var sendButton = document.getElementById("sendButton");
-var sendTextarea = document.getElementById("dataChannelSend");
-var receiveTextarea = document.getElementById("dataChannelReceive");
+var sendButton = $("#sendButton");
+var sendInput = $("#dataChannelSend");
+var chatContent = $("#chatContent");
 
-sendButton.onclick = sendData;
+sendButton.click(sendData);
 
 var hasJoinedRoom;
 var isInitiator;
@@ -109,7 +109,7 @@ function onError (err) {
 
 var localVideo = document.querySelector('#localVideo');
 var remoteVideo = document.querySelector('#remoteVideo');
-var constraints = {audio: false, video: true};
+var constraints = {audio: true, video: true};
 /*
 var constraints = {audio: true,
                    video: {
@@ -178,7 +178,7 @@ function createPeerConnection() {
 }
 
 function sendData() {
-  var data = sendTextarea.value;
+  var data = sendInput.val();
   sendChannel.send(data);
   trace('Sent data: ' + data);
 }
@@ -192,8 +192,12 @@ function gotReceiveChannel(event) {
 }
 
 function handleMessage(event) {
-  trace('Received message: ' + event.data);
-  receiveTextarea.value = event.data;
+  var msg = JSON.parse(event.data);
+  trace('Received message: ' + msg.text);
+  console.log(event);
+  chatContent.append('<p data-peer="' + msg.socketConf.socketId +
+    '"><span class="' + msg.socketConf.peerColor +
+    '">' + msg.socketConf.username + ': </span>' + msg.text + '</p>');
 }
 
 function handleReceiveChannelStateChange() {
@@ -207,10 +211,10 @@ function enableMessageInterface(shouldEnable) {
     dataChannelSend.disabled = false;
     dataChannelSend.focus();
     dataChannelSend.placeholder = "";
-    sendButton.disabled = false;
+    sendButton.prop("disabled", false);
   } else {
     dataChannelSend.disabled = true;
-    sendButton.disabled = true;
+    sendButton.prop("disabled", true);
   }
 }
 

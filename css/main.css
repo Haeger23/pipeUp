@@ -1,6 +1,100 @@
-#localVideo {
+body {
+    padding: 0;
+    margin: 0;
+    font-family: tahoma, verdana, arial, sans-serif;
+}
+
+.content{
+    width: 100%;
+    height: 300px;
+}
+
+#chat {
+    float: left;
+    width: 69%;
+}
+
+#videos {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+#localVideo ,#remoteVideo {
     right: 0px;
-    position: absolute;
-    margin: 21px;
-    height: 180px;
+    margin: 0 auto;
+    height: 150px;
+}
+
+#dataChannelSend, #chatContent {
+    border: 1px solid lightgray;
+    width: 93%;
+    float: right;
+    padding: 3px 10px;
+}
+
+#dataChannelSend {
+}
+
+#sendButton {
+    border: 1px solid #D3D3D3;
+    background: none;
+    height: 21px;
+    float: right;
+    clear: both;
+    margin: 0;
+    width: 25%;
+}
+
+#chatContent {
+    /* height: 30%; */
+    /* overflow: scroll; */
+    min-height: 100px;
+    overflow: scroll;
+}
+
+#chatContent p{
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+}
+
+.color0 {
+    color: darkred;
+}
+.color1 {
+     color: forestgreen;
+}
+.color2 {
+    color: blue;
+}
+.color3 {
+    color: darkgoldenrod;
+}
+.color4 {
+    color: darkmagenta;
+}
+.color5 {
+    color: darkolivegreen;
+}
+.color6 {
+    color: darkred;
+}
+.color7 {
+    color: blue;
+}
+.color8 {
+    color: darkgoldenrod;
+}
+.color9 {
+    color: darkmagenta;
+}
+
+#clients {
+    float: right;
+    width: 25%;
+    list-style: none;
+    min-height: 80px;
+    border: 1px solid #D3D3D3;
+    padding: 5px 10px;
+    margin: 0;
 }

@@ -2,15 +2,15 @@
 <html>
 <head>
 
-<meta name='keywords' content='WebRTC, HTML5, JavaScript' />
-<meta name='description' content='WebRTC Reference App' />
-<meta name='viewport' content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1'>
+    <meta name='keywords' content='WebRTC, HTML5, JavaScript'/>
+    <meta name='description' content='WebRTC Reference App'/>
+    <meta name='viewport' content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1'>
 
-<base target='_blank'>
+    <base target='_blank'>
 
-<title>WebRTC client</title>
+    <title>WebRTC client</title>
 
-<link rel='stylesheet' href='css/main.css' />
+    <link rel='stylesheet' href='css/main.css'/>
 
 </head>
 
@@ -18,23 +18,31 @@
 
 <div id='container'>
 
-  <div id='videos'>
-    <video id='localVideo' autoplay muted></video>
-    <video id='remoteVideo' autoplay></video>
-  </div>
+    <div id='videos'>
+        <video id='localVideo' autoplay muted></video>
+        <video id='remoteVideo' autoplay></video>
+    </div>
 
-  <div id='textareas'>
-		<textarea id="dataChannelSend" disabled placeholder="Press Start, enter some text, then press Send."></textarea>
-		<textarea id="dataChannelReceive" disabled></textarea>
-	</div>
+    <div class="content">
+        <ul id="clients">
+            <li class="color1" data-peer="afdsghjk234567">Hans</li>
+            <li class="color2" data-peer="afdsghjk234567">Pusemuckel</li>
+        </ul>
+        <div id="chat">
 
-  <button id="sendButton" disabled>Send</button>
+            <div id="chatContent">
+                <p data-peer="afdsghjk234567"><span class="color1">Pusemuckel: </span>Das ist mein BEitrag</p>
+            </div>
 
-  <ul id="clients">
-  </ul>
+            <input type="text" id="dataChannelSend" disabled>
+
+            <button id="sendButton" disabled>Nachricht senden</button>
+        </div>
+    </div>
 
 </div>
 
+<script src='js/lib/jquery-2.1.1.min.js'></script>
 <script src='js/lib/socket.io.js'></script>
 <script src='js/lib/adapter.js'></script>
 <script src='js/peer.js'></script>

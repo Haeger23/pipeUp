@@ -2,15 +2,16 @@
 
 'use strict'; //ECMA5 feature to gain more exceptions
 
-var sendButton = document.getElementById("sendButton"),
-    sendTextarea = document.getElementById("dataChannelSend"),
-    receiveTextarea = document.getElementById("dataChannelReceive"),
-    clientsList = document.getElementById("clients");
+var sendButton =  $("#sendButton"),
+    sendInput =   $("#dataChannelSend"),
+    chatContent = $("#chatContent"),
+    clientsList = $("#clients");
 
-sendButton.onclick = sendGlobalTxtMsg;
+sendButton.click(sendGlobalTxtMsg);
 
 var localStream;
 var remoteStream;
+var peerColor = 1;
 
 // storage for connected peers
 var peers = {};
@@ -21,6 +22,11 @@ var peers = {};
 
 var socket = io.connect();
 var room = 'pipeUp';
+
+var hqSocketConf = {
+      username: 'hq',
+      peerColor: 'color0'
+    };
 
 console.log('Create room', room);
 socket.emit('create', room);
@@ -36,6 +42,7 @@ socket.on('denied', function (room){
 
 socket.on('joined', function (conf){
   var peer = new Peer();
+  conf.color = getColorForPeer();
   peer.create(conf);
   // save peer in peers Obj
   peers[conf.socketId] = peer;
@@ -79,7 +86,7 @@ var remoteVideo = document.querySelector('#remoteVideo');
 
 
 window.onbeforeunload = function(e){
-  closePeers();
+  //closePeers();
 }
 
 /////////////////////////////////////////////////////////
@@ -98,13 +105,38 @@ function closePeers() {
   console.log('Session closed.');
 }
 
+function getColorForPeer() {
+  return 'color' + peerColor++;
+}
+
+// todo die fkt ist irgendwie noch nicht so
 function sendGlobalTxtMsg() {
-  var data = sendTextarea.value;
+  var msg = JSON.stringify({
+    type: "message",
+    text: sendInput.val(),
+    socketConf: hqSocketConf
+  });
+
   for (var peer in peers) {
-    console.log(peers[peer]);
-    peers[peer].sendTxtMsg(data);
-    trace('Sent data: ' + data + ' to ' + peers[peer].getUsername());
+      peers[peer].sendTxtMsg(msg);
   }
+
+  trace('Sent data: ' + msg.text + ' to everybody');
+}
+
+function forwardGlobalTxtMsg(sender, msg) {
+  var msg = JSON.stringify({
+    type: "message",
+    text: msg,
+    socketConf: peers[sender].socketConf
+  });
+
+  for (var peer in peers) {
+    if (peer.getSocketId() != sender)
+      peers[peer].sendTxtMsg(msg);
+  }
+
+  trace('forwarded msg: ' + msg.text + ' to everybody');
 }
 
 
@@ -113,10 +145,10 @@ function enableMessageInterface(shouldEnable) {
     dataChannelSend.disabled = false;
     dataChannelSend.focus();
     dataChannelSend.placeholder = "";
-    sendButton.disabled = false;
+    sendButton.prop("disabled", false);
   } else {
     dataChannelSend.disabled = true;
-    sendButton.disabled = true;
+    sendButton.prop("disabled", true);
   }
 }
 
