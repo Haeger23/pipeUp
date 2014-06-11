@@ -1,44 +1,36 @@
 <!DOCTYPE html>
 <html>
-<head>
+    <head>
+        <meta name='viewport' content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1'>
+        <title>WebRTC client</title>
+        <link rel='stylesheet' href='css/main.css' />
+    </head>
 
-<meta name='keywords' content='WebRTC, HTML5, JavaScript' />
-<meta name='description' content='WebRTC Reference App' />
-<meta name='viewport' content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1'>
+    <body>
 
-<base target='_blank'>
+        <div id='container'>
 
-<title>WebRTC client</title>
+          <div id='videos'>
+            <video id='localVideo' autoplay muted></video>
+            <video id='remoteVideo' autoplay></video>
+          </div>
 
-<link rel='stylesheet' href='css/main.css' />
+          <div id='textareas'>
+                <textarea id="dataChannelSend" disabled></textarea>
+                <textarea id="dataChannelReceive" disabled></textarea>
+            </div>
 
-</head>
+          <button id="sendButton" disabled>Send</button>
 
-<body>
+          <label for="username">Benutzername</label>
+          <input type="text" name="username" id="username" value="Hans">
+          <button id="loginBtn">Anmelden</button>
 
-<div id='container'>
+        </div>
 
-  <div id='videos'>
-    <video id='localVideo' autoplay muted></video>
-    <video id='remoteVideo' autoplay></video>
-  </div>
+        <script src='js/lib/socket.io.js'></script>
+        <script src='js/lib/adapter.js'></script>
+        <script src='js/client.js'></script>
 
-  <div id='textareas'>
-		<textarea id="dataChannelSend" disabled placeholder="Press Start, enter some text, then press Send."></textarea>
-		<textarea id="dataChannelReceive" disabled></textarea>
-	</div>
-
-  <button id="sendButton" disabled>Send</button>
-
-  <label for="username">Benutzername</label>
-  <input type="text" name="username" id="username" value="Hans">
-  <button id="loginBtn">Anmelden</button>
-
-</div>
-
-<script src='js/lib/socket.io.js'></script>
-<script src='js/lib/adapter.js'></script>
-<script src='js/client.js'></script>
-
-</body>
+    </body>
 </html>

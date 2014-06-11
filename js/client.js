@@ -82,7 +82,7 @@ socket.on('message', function (message){
     pc.setRemoteDescription(new RTCSessionDescription(message));
 
     console.log('Sending answer to peer.');
-    pc.createAnswer(setLocalAndSendMessage, null, sdpConstraints);
+    pc.createAnswer(setLocalAndSendMessage, onError, sdpConstraints);
 
   } else if (message.type === 'candidate' && pcIsAlreadyCreated) {
     var candidate = new RTCIceCandidate({
@@ -100,6 +100,10 @@ socket.on('message', function (message){
     getUserMedia(constraints, handleUserMedia, handleUserMediaError);
   }
 });
+
+function onError (err) {
+  console.log('Fehler in createAnswer: ' + err);
+};
 
 ////////////////////////////////////////////////////
 

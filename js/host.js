@@ -7,11 +7,10 @@ var sendButton = document.getElementById("sendButton"),
     receiveTextarea = document.getElementById("dataChannelReceive"),
     clientsList = document.getElementById("clients");
 
-sendButton.onclick = sendData;
+sendButton.onclick = sendGlobalTxtMsg;
 
 var localStream;
 var remoteStream;
-var turnReady;
 
 // storage for connected peers
 var peers = {};
@@ -68,7 +67,8 @@ socket.on('message', function (message, from){
   } else if (message.type === 'candidate') {
     peer.addIceCandidate(message);
   } else if (message === 'bye') {
-    console.log('Session terminated.');
+    //todo Close sessions - garbage collection
+    //closePeer(from);
   }
 });
 
@@ -77,22 +77,32 @@ socket.on('message', function (message, from){
 var localVideo = document.querySelector('#localVideo');
 var remoteVideo = document.querySelector('#remoteVideo');
 
-if (location.hostname != "localhost") {
-  requestTurn('https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913');
-}
 
 window.onbeforeunload = function(e){
-	sendMessage('bye');
+  closePeers();
 }
 
 /////////////////////////////////////////////////////////
 
+function closePeer(socketId) {
+  peers[socketId].close();
+  console.log('Peer closed: ' + socketId);
+}
 
-function sendData() {
+function closePeers() {
+  for (var peer in peers) {
+    peers[peer].close();
+    //peers[peer].delete;
+  }
+  sendMessage('Server closed session');
+  console.log('Session closed.');
+}
+
+function sendGlobalTxtMsg() {
   var data = sendTextarea.value;
   for (var peer in peers) {
     console.log(peers[peer]);
-    peers[peer].sendChannel.send(data);
+    peers[peer].sendTxtMsg(data);
     trace('Sent data: ' + data + ' to ' + peers[peer].getUsername());
   }
 }
@@ -107,36 +117,6 @@ function enableMessageInterface(shouldEnable) {
   } else {
     dataChannelSend.disabled = true;
     sendButton.disabled = true;
-  }
-}
-
-
-function requestTurn(turn_url) {
-  var turnExists = false;
-  for (var i in pc_config.iceServers) {
-    if (pc_config.iceServers[i].url.substr(0, 5) === 'turn:') {
-      turnExists = true;
-      turnReady = true;
-      break;
-    }
-  }
-  if (!turnExists) {
-    console.log('Getting TURN server from ', turn_url);
-    // No TURN server. Get one from computeengineondemand.appspot.com:
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function(){
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        var turnServer = JSON.parse(xhr.responseText);
-        console.log('Got TURN server: ', turnServer);
-        pc_config.iceServers.push({
-          'url': 'turn:' + turnServer.username + '@' + turnServer.turn,
-          'credential': turnServer.password
-        });
-        turnReady = true;
-      }
-    };
-    xhr.open('GET', turn_url, true);
-    xhr.send();
   }
 }
 
