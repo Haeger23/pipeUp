@@ -12,7 +12,6 @@ var static = require('node-static'),
 var io = require('socket.io').listen(app),
     roomName = null;
 
-
 io.sockets.on('connection', function (socket){
 
   socket.on('create', function (room) {

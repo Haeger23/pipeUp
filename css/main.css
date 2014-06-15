@@ -38,11 +38,12 @@ body {
 #sendButton {
     border: 1px solid #D3D3D3;
     background: none;
-    height: 21px;
+    height: 32px;
+    line-height: 25px;
     float: right;
     clear: both;
     margin: 0;
-    width: 25%;
+    width: 40%;
 }
 
 #chatContent {
