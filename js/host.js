@@ -1,7 +1,5 @@
 // WebRTC Project for a better UX in Q&A sessions after presentations. No need for giving around a microphone anymore.
 
-'use strict'; //ECMA5 feature to gain more exceptions
-
 var sendButton =  $("#sendButton"),
     sendInput =   $("#dataChannelSend"),
     chatContent = $("#chatContent"),
@@ -41,9 +39,9 @@ socket.on('denied', function (room){
 });
 
 socket.on('joined', function (conf){
-  var peer = new Peer();
   conf.color = getColorForPeer();
-  peer.create(conf);
+  var peer = new Peer(conf);
+  peer.connect();
   // save peer in peers Obj
   peers[conf.socketId] = peer;
   console.log(conf.username + ' has joined');
