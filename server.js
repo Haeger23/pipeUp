@@ -16,14 +16,12 @@ io.sockets.on('connection', function (socket){
 
   socket.on('create', function (room) {
     roomName = room;
-    var numClients = io.sockets.clients(roomName).length;
-    if (numClients == 0  || true){
-      //TODO: Some kind of safty mechanism so that not everyone is able to create a room
+    if (!masterSocket.id){
       socket.join(room);
       masterSocket.id = socket.id;
-      log('numClients: ', numClients);
+      log('Master created room.');
       io.sockets.socket(masterSocket.id).emit('created', roomName);
-    } else if (numClients > 0) {
+    } else {
       io.sockets.socket(masterSocket.id).emit('denied', roomName);
     }
   });
@@ -33,7 +31,7 @@ io.sockets.on('connection', function (socket){
       var numClients = io.sockets.clients(roomName).length;
       log('numClients: ', numClients);
 
-      if (numClients > 0) {
+      if (masterSocket.id) {
         socket.join(roomName);
         io.sockets.socket(socket.id).emit('joined', {
           roomName: roomName,
@@ -71,7 +69,7 @@ io.sockets.on('connection', function (socket){
 	  for (var i = 0; i < arguments.length; i++) {
 	  	array.push(arguments[i]);
 	  }
-	    socket.emit('log', array);
+	  socket.emit('log', array);
 	}
 
 });

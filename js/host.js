@@ -1,142 +1,54 @@
-// WebRTC Project for a better UX in Q&A sessions after presentations. No need for giving around a microphone anymore.
+"use strict";
+
+// WebRTC Project for a better UX in Q&A sessions after presentations.
+// No need for giving around a microphone anymore.
 
 var sendButton =  $("#sendButton"),
     sendInput =   $("#dataChannelSend"),
     chatContent = $("#chatContent"),
-    clientsList = $("#clients");
+    clientsList = $("#clients"),
+    localVideo = document.querySelector('#localVideo'),
+    remoteVideo = document.querySelector('#remoteVideo');
 
-sendButton.click(sendGlobalTxtMsg);
+var pipeUp = new PipeUpHost();
 
-var localStream;
-var remoteStream;
-var peerColor = 1;
-
-// storage for connected peers
-var peers = {};
-
-
-/////////////////////////////////////////////
-
-
-var socket = io.connect();
-var room = 'pipeUp';
-
-var hqSocketConf = {
-      username: 'hq',
-      peerColor: 'color0'
-    };
-
-console.log('Create room', room);
-socket.emit('create', room);
-
-
-socket.on('created', function (room){
-  console.log('Created room ' + room);
-});
-
-socket.on('denied', function (room){
-  console.log('denied - room ' + room + ' already exists');
-});
-
-socket.on('joined', function (conf){
-  conf.color = getColorForPeer();
-  var peer = new Peer(conf);
-  peer.connect();
-  // save peer in peers Obj
-  peers[conf.socketId] = peer;
-  console.log(conf.username + ' has joined');
-});
-
-socket.on('log', function (array){
-  console.log.apply(console, array);
-});
-
-function sendMessage(message, receiver){
-  console.log('Sending message: ', message);
-  if (receiver)
-    socket.emit('messageTo', message, receiver);
-  else
-    socket.emit('message', message);
+pipeUp.onPeerAdded = function (peer) {
+  trace('Send channel state is: open');
+  enableMessageInterface(true);
+  clientsList.append('<li data-peer="' + peer.getSocketId() + '" class="' + peer.getPeerColor() + '">' + peer.getUsername() + '</li>');
+  peer.userListItem = $('li[data-peer="' + peer.getSocketId() + '"]');
+  peer.userListItem.click(function () {
+    log('ask speaker to speak: ' + peer.getUsername());
+    pipeUp.getSpeaker(peer);
+  });
+}
+pipeUp.onClosePeer = function (peer) {
+  clientsList.find('li[data-peer="' + peer.getSocketId() + '"]').remove();
 }
 
-/////////////////// SIGNALING //////////////////////
-
-socket.on('message', function (message, from){
-  console.log('Received message:', message);
-  var peer = peers[from];
-  if (message === 'got user media') {
-    //Verbindung erneuern
-    peer.createOffer();
-  } else if (message.type === 'answer') {
-    peer.setRemoteDescription(message);
-  } else if (message.type === 'candidate') {
-    peer.addIceCandidate(message);
-  } else if (message === 'bye') {
-    //todo Close sessions - garbage collection
-    //closePeer(from);
+pipeUp.onChatMessageReceive = function (peer, msg) {
+  log('Received message: ' + msg);
+  var myself = (!peer) ? 'class="myself"' : '';
+  if (peer) {
+    chatContent.append('<p ' + myself + ' data-peer="' + peer.getSocketId() +
+                '"><span class="' + peer.getPeerColor() + '">' +
+                peer.getUsername() + ':</span> ' + msg + '</p>');
+  } else {
+    chatContent.append('<p class="myself"><span class="' + pipeUp.getHqSocketConf().color + '">' +
+                pipeUp.getHqSocketConf().username + ':</span> ' + msg + '</p>');
   }
+
+}
+
+sendButton.click(function() {
+  var msg = sendInput.val();
+  pipeUp.sendGlobalTxtMsg(msg);
+  pipeUp.onChatMessageReceive(null, msg);
 });
-
-////////////////////////////////////////////////////
-
-var localVideo = document.querySelector('#localVideo');
-var remoteVideo = document.querySelector('#remoteVideo');
-
 
 window.onbeforeunload = function(e){
-  //closePeers();
+  pipeUp.closeAllPeers();
 }
-
-/////////////////////////////////////////////////////////
-
-function closePeer(socketId) {
-  peers[socketId].close();
-  console.log('Peer closed: ' + socketId);
-}
-
-function closePeers() {
-  for (var peer in peers) {
-    peers[peer].close();
-    //peers[peer].delete;
-  }
-  sendMessage('Server closed session');
-  console.log('Session closed.');
-}
-
-function getColorForPeer() {
-  return 'color' + peerColor++;
-}
-
-// todo die fkt ist irgendwie noch nicht so
-function sendGlobalTxtMsg() {
-  var msg = JSON.stringify({
-    type: "message",
-    text: sendInput.val(),
-    socketConf: hqSocketConf
-  });
-
-  for (var peer in peers) {
-      peers[peer].sendTxtMsg(msg);
-  }
-
-  trace('Sent data: ' + msg.text + ' to everybody');
-}
-
-function forwardGlobalTxtMsg(sender, msg) {
-  var msg = JSON.stringify({
-    type: "message",
-    text: msg,
-    socketConf: peers[sender].socketConf
-  });
-
-  for (var peer in peers) {
-    if (peer.getSocketId() != sender)
-      peers[peer].sendTxtMsg(msg);
-  }
-
-  trace('forwarded msg: ' + msg.text + ' to everybody');
-}
-
 
 function enableMessageInterface(shouldEnable) {
   if (shouldEnable) {
@@ -149,6 +61,7 @@ function enableMessageInterface(shouldEnable) {
     sendButton.prop("disabled", true);
   }
 }
+
 
 /////////////////////////////////////////////////////
 

@@ -10,20 +10,29 @@
 
     <div id='container'>
 
-        <div id='videos'>
+        <div id='videos' class="invis">
             <video id='localVideo' autoplay muted></video>
             <video id='remoteVideo' autoplay></video>
         </div>
 
-        <label for="username">Benutzername</label>
-        <input type="text" name="username" id="username" value="Hans">
-        <button id="loginBtn">Anmelden</button>
+        <div id="login">
+            <div class="elements">
+                <label for="username">Benutzername</label>
+                <input type="text" name="username" id="username" value="Hans">
+                <button id="loginBtn">Anmelden</button>
+            </div>
+        </div>
 
+        <div id="controls">
+            <button id="pipeUp">PipeUp!</button>
+            <button id="disconnect">Abmelden</button>
+        </div>
         <div class="content">
+            <ul id="clients">
+            </ul>
             <div id="chat">
 
                 <div id="chatContent">
-                    <p data-peer="afdsghjk234567"><span class="color1">Pusemuckel: </span>Das ist mein BEitrag</p>
                 </div>
 
                 <input type="text" id="dataChannelSend" disabled>
@@ -33,6 +42,7 @@
         </div>
 
     </div>
+
 
     <script src='js/lib/jquery-2.1.1.min.js'></script>
     <script src='js/lib/socket.io.js'></script>

@@ -4,6 +4,15 @@ body {
     font-family: tahoma, verdana, arial, sans-serif;
 }
 
+button {
+    border: 1px solid #D3D3D3;
+    background: #ffffff;
+    height: 32px;
+    line-height: 25px;
+    margin: 0;
+    width: 120px;
+}
+
 .content{
     width: 100%;
     height: 300px;
@@ -47,9 +56,8 @@ body {
 }
 
 #chatContent {
-    /* height: 30%; */
-    /* overflow: scroll; */
     min-height: 100px;
+    max-height: 150px;
     overflow: scroll;
 }
 
@@ -57,6 +65,11 @@ body {
     display: block;
     width: 100%;
     margin: 5px 0;
+}
+
+#chatContent p.myself{
+    font-size: smaller;
+    color: gray;
 }
 
 .color0 {
@@ -98,4 +111,42 @@ body {
     border: 1px solid #D3D3D3;
     padding: 5px 10px;
     margin: 0;
+}
+
+#login {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: #585858;
+    color: white;
+    opacity: 0.8;
+}
+
+
+#login .elements{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 316px;
+    height: 50px;
+    margin: auto;
+    margin-left: -133px;
+}
+
+#login .elements button {
+    width: 231px;
+    margin-top: 15px;
+}
+
+#controls {
+    width: 100%;
+    text-align: center;
+    height: 25px;
+    margin: 25px 0;
+}
+
+.invis {
+    display: none;
 }

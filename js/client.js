@@ -1,78 +1,95 @@
-'use strict'; //ECMA5 feature to gain more exceptions
+"use strict";
 
-var sendChannel;
-var sendButton = $("#sendButton");
-var sendInput = $("#dataChannelSend");
-var chatContent = $("#chatContent");
+var sendButton = $("#sendButton"),
+    sendInput = $("#dataChannelSend"),
+    login = $('#login'),
+    chatContent = $("#chatContent"),
+    loginBtn = $("#loginBtn"),
+    pipeUpBtn = $("#pipeUp"),
+    disconnectBtn = $("#disconnect");
+
+var pcIsAlreadyCreated,
+    localStream,
+    remoteStream,
+    sendChannel,
+    pc,
+
+    pc_config = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
+
+    pc_constraints = {
+    'optional': [
+      {'DtlsSrtpKeyAgreement': true},
+      {'RtpDataChannels': true}
+    ]},
+
+    // Set up audio and video regardless of what devices are present.
+    sdpConstraints = {'mandatory': {
+      'OfferToReceiveAudio':true,
+      'OfferToReceiveVideo':true
+      }
+    };
+
+
+var socket = io.connect(),
+    room = 'pipeUp',
+    masterSocketId,
+    localSocketId;
+
 
 sendButton.click(sendData);
-
-var hasJoinedRoom;
-var isInitiator;
-var pcIsAlreadyCreated;
-var localStream;
-var pc;
-var remoteStream;
-var turnReady;
-
-var pc_config = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]};
-
-var pc_constraints = {
-  'optional': [
-    {'DtlsSrtpKeyAgreement': true},
-    {'RtpDataChannels': true}
-  ]};
-
-// Set up audio and video regardless of what devices are present.
-var sdpConstraints = {'mandatory': {
-  'OfferToReceiveAudio':true,
-  'OfferToReceiveVideo':true }};
-
-
-var socket = io.connect();
-var room = 'pipeUp';
-var masterSocket;
 
 
 /////////////////////////////////////////////
 
-document.getElementById("loginBtn").addEventListener("click", function(event) {
-  console.log('join room', room);
+loginBtn.click(function() {
+  log('join room', room);
   socket.emit('join', {
     type: 'login',
     room: room,
-    username: document.getElementById("username").value});
-}, false);
+    username: $("#username").val()});
+});
+
+pipeUpBtn.click(function() {
+  log('todo: PipeUp!');
+});
+
+disconnectBtn.click(function() {
+  closePeerConnection();
+});
+
+window.onbeforeunload = function(e){
+  closePeerConnection();
+}
 
 /////////////////////////////////////////////
 
 socket.on('denied', function (room){
-  console.log('Access denied for room ' + room);
+  log('Access denied for room ' + room);
 });
 
 socket.on('joined', function (conf){
-  console.log('This peer has joined room ' + conf.roomName);
-  masterSocket = conf.masterSocket;
-  hasJoinedRoom = true;
+  log('This peer has joined room ' + conf.roomName);
+  masterSocketId = conf.masterSocket;
+  localSocketId = socket.socket.sessionid;
 });
 
 socket.on('log', function (array){
-  console.log.apply(console, array);
+  log.apply(console, array);
 });
 
 function sendMessage(message){
-  console.log('Sending message: ', message);
-  socket.emit('messageTo', message, masterSocket);
+  log('Sending message: ', message);
+  socket.emit('messageTo', message, masterSocketId);
 }
 
 /////////////////// SIGNALING //////////////////////
 
 socket.on('message', function (message){
-  console.log('Received message:', message);
+  log('Received message:', message);
   if (message.type === 'offer') {
-    if (!isInitiator && !pcIsAlreadyCreated) {
+
+    if (!pcIsAlreadyCreated) {
         createPeerConnection();
-        //pc.addStream(localStream);
         pcIsAlreadyCreated = true;
     }
 
@@ -81,28 +98,28 @@ socket.on('message', function (message){
 
     pc.setRemoteDescription(new RTCSessionDescription(message));
 
-    console.log('Sending answer to peer.');
-    pc.createAnswer(setLocalAndSendMessage, onError, sdpConstraints);
+    log('Sending answer to peer.');
+    pc.createAnswer(function (sessionDescription) {
+        // Set Opus as the preferred codec in SDP if Opus is present.
+        sessionDescription.sdp = preferOpus(sessionDescription.sdp);
+        pc.setLocalDescription(sessionDescription);
+        sendMessage(sessionDescription);
+      }, onError, sdpConstraints);
 
   } else if (message.type === 'candidate' && pcIsAlreadyCreated) {
-    var candidate = new RTCIceCandidate({
-                                          sdpMLineIndex:message.label,
-                                          candidate:message.candidate});
+    var candidate = new RTCIceCandidate({sdpMLineIndex:message.label,
+                                         candidate:message.candidate});
     pc.addIceCandidate(candidate);
-    console.log('Candidate added.');
-  } else if (message === 'bye' && pcIsAlreadyCreated) {
-    pcIsAlreadyCreated = false;
-    pc.close();
-    pc = null;
-    isInitiator = false;
-    console.log('Session terminated.');
+    log('Candidate added.');
+  } else if (message === 'close' && pcIsAlreadyCreated) {
+    closePeerConnection();
   } else if (message === 'getVideo' && pcIsAlreadyCreated) {
     getUserMedia(constraints, handleUserMedia, handleUserMediaError);
   }
 });
 
 function onError (err) {
-  console.log('Fehler in createAnswer: ' + err);
+  log('Fehler in createAnswer: ' + err);
 };
 
 ////////////////////////////////////////////////////
@@ -110,66 +127,27 @@ function onError (err) {
 var localVideo = document.querySelector('#localVideo');
 var remoteVideo = document.querySelector('#remoteVideo');
 var constraints = {audio: true, video: true};
-/*
-var constraints = {audio: true,
-                   video: {
-                     mandatory: {
-                       width: { min: 320 },
-                       height: { min: 180}
-                     },
-                     optional: [
-                       { width: { max: 1280 }},
-                       { frameRate: 30},
-                       { facingMode: "user"}
-                     ]
-                   }}; */
-
-//getUserMedia(constraints, handleUserMedia, handleUserMediaError);
-//console.log('Getting user media with constraints', constraints);
-
-if (location.hostname != "localhost") {
-  requestTurn('https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913');
-}
 
 function handleUserMedia(stream) {
   localStream = stream;
   attachMediaStream(localVideo, stream);
-  console.log('Adding local stream.');
+  log('Adding local stream.');
   sendMessage('got user media');
 }
 
 function handleUserMediaError(error){
-  console.log('getUserMedia error: ', error);
+  log('getUserMedia error: ', error);
 }
-
-function maybeStart() {
-  if (!pcIsAlreadyCreated && hasJoinedRoom) {
-    createPeerConnection();
-    //pc.addStream(localStream);
-    pcIsAlreadyCreated = true;
-  }
-}
-
-window.onbeforeunload = function(e){
-	sendMessage('bye');
-}
-
 /////////////////////////////////////////////////////////
 
 function createPeerConnection() {
-  try {
-    pc = new RTCPeerConnection(pc_config, pc_constraints);
-    pc.onicecandidate = handleIceCandidate;
-    console.log('Created RTCPeerConnnection with:\n' +
-      '  config: \'' + JSON.stringify(pc_config) + '\';\n' +
-      '  constraints: \'' + JSON.stringify(pc_constraints) + '\'.');
-  } catch (e) {
-    console.log('Failed to create PeerConnection, exception: ' + e.message);
-    alert('Cannot create RTCPeerConnection object.');
-    return;
-  }
+  pc = new RTCPeerConnection(pc_config, pc_constraints);
+  pc.onicecandidate = handleIceCandidate;
+  log('Created RTCPeerConnnection with:\n' +
+    '  config: \'' + JSON.stringify(pc_config) + '\';\n' +
+    '  constraints: \'' + JSON.stringify(pc_constraints) + '\'.');
   pc.oniceconnectionstatechange = function () {
-    trace('IceConnectionStateChanged: '+ this.iceConnectionState);
+    log('IceConnectionStateChanged: '+ this.iceConnectionState);
   }
   pc.onaddstream = handleRemoteStreamAdded;
   pc.onremovestream = handleRemoteStreamRemoved;
@@ -180,11 +158,11 @@ function createPeerConnection() {
 function sendData() {
   var data = sendInput.val();
   sendChannel.send(data);
-  trace('Sent data: ' + data);
+  log('Sent data: ' + data);
 }
 
 function gotReceiveChannel(event) {
-  trace('Receive Channel Callback');
+  log('Receive Channel Callback');
   sendChannel = event.channel;
   sendChannel.onmessage = handleMessage;
   sendChannel.onopen = handleReceiveChannelStateChange;
@@ -193,16 +171,18 @@ function gotReceiveChannel(event) {
 
 function handleMessage(event) {
   var msg = JSON.parse(event.data);
-  trace('Received message: ' + msg.text);
-  console.log(event);
-  chatContent.append('<p data-peer="' + msg.socketConf.socketId +
-    '"><span class="' + msg.socketConf.peerColor +
+  log('Received message: ' + msg.text);
+  log(event);
+
+  var myself = (msg.socketConf.socketId === localSocketId) ? 'class="myself"' : '';
+  chatContent.append('<p ' + myself + ' data-peer="' + msg.socketConf.socketId +
+    '"><span class="' + msg.socketConf.color +
     '">' + msg.socketConf.username + ': </span>' + msg.text + '</p>');
 }
 
 function handleReceiveChannelStateChange() {
   var readyState = sendChannel.readyState;
-  trace('Receive channel state is: ' + readyState);
+  log('Receive channel state is: ' + readyState);
   enableMessageInterface(readyState == "open");
 }
 
@@ -212,14 +192,16 @@ function enableMessageInterface(shouldEnable) {
     dataChannelSend.focus();
     dataChannelSend.placeholder = "";
     sendButton.prop("disabled", false);
+    login.hide();
   } else {
     dataChannelSend.disabled = true;
     sendButton.prop("disabled", true);
+    login.show();
   }
 }
 
 function handleIceCandidate(event) {
-  console.log('handleIceCandidate event: ', event);
+  log('handleIceCandidate event: ', event);
   if (event.candidate) {
     sendMessage({
       type: 'candidate',
@@ -227,75 +209,25 @@ function handleIceCandidate(event) {
       id: event.candidate.sdpMid,
       candidate: event.candidate.candidate});
   } else {
-    console.log('End of candidates.');
-  }
-}
-
-function doCall() {
-  var constraints = {'optional': [], 'mandatory': {}};
-  constraints = mergeConstraints(constraints, sdpConstraints);
-  console.log('Sending offer to peer, with constraints: \n' +
-    '  \'' + JSON.stringify(constraints) + '\'.');
-  pc.createOffer(setLocalAndSendMessage, null, constraints);
-}
-
-function doAnswer() {
-  console.log('Sending answer to peer.');
-  pc.createAnswer(setLocalAndSendMessage, null, sdpConstraints);
-}
-
-function mergeConstraints(cons1, cons2) {
-  var merged = cons1;
-  for (var name in cons2.mandatory) {
-    merged.mandatory[name] = cons2.mandatory[name];
-  }
-  merged.optional.concat(cons2.optional);
-  return merged;
-}
-
-function setLocalAndSendMessage(sessionDescription) {
-  // Set Opus as the preferred codec in SDP if Opus is present.
-  sessionDescription.sdp = preferOpus(sessionDescription.sdp);
-  pc.setLocalDescription(sessionDescription);
-  sendMessage(sessionDescription);
-}
-
-function requestTurn(turn_url) {
-  var turnExists = false;
-  for (var i in pc_config.iceServers) {
-    if (pc_config.iceServers[i].url.substr(0, 5) === 'turn:') {
-      turnExists = true;
-      turnReady = true;
-      break;
-    }
-  }
-  if (!turnExists) {
-    console.log('Getting TURN server from ', turn_url);
-    // No TURN server. Get one from computeengineondemand.appspot.com:
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function(){
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        var turnServer = JSON.parse(xhr.responseText);
-      	console.log('Got TURN server: ', turnServer);
-        pc_config.iceServers.push({
-          'url': 'turn:' + turnServer.username + '@' + turnServer.turn,
-          'credential': turnServer.password
-        });
-        turnReady = true;
-      }
-    };
-    xhr.open('GET', turn_url, true);
-    xhr.send();
+    log('End of candidates.');
   }
 }
 
 function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.');
+  log('Remote stream added.');
   attachMediaStream(remoteVideo, event.stream);
   remoteStream = event.stream;
 }
 function handleRemoteStreamRemoved(event) {
-  console.log('Remote stream removed. Event: ', event);
+  log('Remote stream removed. Event: ', event);
+}
+
+function closePeerConnection() {
+  sendMessage('close');
+  pcIsAlreadyCreated = false;
+  pc.close();
+  pc = null;
+  log('Session closed.');
 }
 
 ///////////////////////////////////////////
@@ -375,3 +307,11 @@ function removeCN(sdpLines, mLineIndex) {
   return sdpLines;
 }
 
+/////////////// GLOBAL Helper //////////////////////////////
+
+var doLog = true; // control logging
+var log = function (data, data2) {
+  if (doLog) {
+    console.log(data, data2 || '');
+  }
+}
