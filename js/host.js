@@ -4,6 +4,7 @@
 // No need for giving around a microphone anymore.
 
 var sendButton =  $("#sendButton"),
+    closeButton =  $("#closeButton"),
     sendInput =   $("#dataChannelSend"),
     chatContent = $("#chatContent"),
     clientsList = $("#clients"),
@@ -22,7 +23,7 @@ pipeUp.onPeerAdded = function (peer) {
     pipeUp.getSpeaker(peer);
   });
 }
-pipeUp.onClosePeer = function (peer) {
+pipeUp.peers.onClosePeer = function (peer) {
   clientsList.find('li[data-peer="' + peer.getSocketId() + '"]').remove();
 }
 
@@ -42,13 +43,14 @@ pipeUp.onChatMessageReceive = function (peer, msg) {
 
 sendButton.click(function() {
   var msg = sendInput.val();
-  pipeUp.sendGlobalTxtMsg(msg);
+  pipeUp.peers.sendGlobalTxtMsg(msg);
   pipeUp.onChatMessageReceive(null, msg);
 });
 
-window.onbeforeunload = function(e){
-  pipeUp.closeAllPeers();
-}
+closeButton.click(function(e){
+  pipeUp.close();
+  location.reload();
+});
 
 function enableMessageInterface(shouldEnable) {
   if (shouldEnable) {

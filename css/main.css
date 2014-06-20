@@ -140,6 +140,10 @@ button {
     margin-top: 15px;
 }
 
+#closeButton {
+    width: 155px;
+}
+
 #controls {
     width: 100%;
     text-align: center;

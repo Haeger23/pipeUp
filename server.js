@@ -64,6 +64,11 @@ io.sockets.on('connection', function (socket){
 
   });
 
+  socket.on('close room', function () {
+    log('!!! room closed by Master !!!');
+    masterSocket.id = null;
+  });
+
 	function log(){
 		var array = [">>> "];
 	  for (var i = 0; i < arguments.length; i++) {

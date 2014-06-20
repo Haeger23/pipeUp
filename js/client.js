@@ -58,7 +58,8 @@ disconnectBtn.click(function() {
 });
 
 window.onbeforeunload = function(e){
-  closePeerConnection();
+  //does not work, security restrictions
+  //closePeerConnection();
 }
 
 /////////////////////////////////////////////
