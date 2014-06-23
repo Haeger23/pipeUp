@@ -1,11 +1,12 @@
 "use strict";
 
 var sendButton = $("#sendButton"),
-    sendInput = $("#dataChannelSend"),
+    txtInput = $("#txtInput"),
     login = $('#login'),
     chatContent = $("#chatContent"),
     loginBtn = $("#loginBtn"),
     pipeUpBtn = $("#pipeUp"),
+    clientsList = $("#clients"),
     disconnectBtn = $("#disconnect");
 
 var pcIsAlreadyCreated,
@@ -36,7 +37,7 @@ var socket = io.connect(),
     localSocketId;
 
 
-sendButton.click(sendData);
+sendButton.click(sendChatMessage);
 
 
 /////////////////////////////////////////////
@@ -50,7 +51,7 @@ loginBtn.click(function() {
 });
 
 pipeUpBtn.click(function() {
-  log('todo: PipeUp!');
+  sendAction('pipeUp');
 });
 
 disconnectBtn.click(function() {
@@ -114,8 +115,6 @@ socket.on('message', function (message){
     log('Candidate added.');
   } else if (message === 'close' && pcIsAlreadyCreated) {
     closePeerConnection();
-  } else if (message === 'getVideo' && pcIsAlreadyCreated) {
-    getUserMedia(constraints, handleUserMedia, handleUserMediaError);
   }
 });
 
@@ -156,10 +155,19 @@ function createPeerConnection() {
   pc.ondatachannel = gotReceiveChannel;
 }
 
-function sendData() {
-  var data = sendInput.val();
-  sendChannel.send(data);
+function sendChatMessage() {
+  var data = txtInput.val();
+  sendAction('message', data);
+  txtInput.val('');
   log('Sent data: ' + data);
+}
+
+function sendAction(action, content) {
+  var action = JSON.stringify({
+    type: action,
+    text: (content) ? content : ''
+  });
+  sendChannel.send(action);
 }
 
 function gotReceiveChannel(event) {
@@ -171,14 +179,31 @@ function gotReceiveChannel(event) {
 }
 
 function handleMessage(event) {
-  var msg = JSON.parse(event.data);
-  log('Received message: ' + msg.text);
-  log(event);
+  var action = JSON.parse(event.data);
 
-  var myself = (msg.socketConf.socketId === localSocketId) ? 'class="myself"' : '';
-  chatContent.append('<p ' + myself + ' data-peer="' + msg.socketConf.socketId +
-    '"><span class="' + msg.socketConf.color +
-    '">' + msg.socketConf.username + ': </span>' + msg.text + '</p>');
+  log('Received Action: ' + action.text);
+
+  switch (action.type)
+  {
+    case "message":
+      var myself = (action.socketConf.socketId === localSocketId) ? 'class="myself"' : '';
+      chatContent.append('<p ' + myself + ' data-peer="' + action.socketConf.socketId +
+        '"><span class="' + action.socketConf.color +
+        '">' + action.socketConf.username + ': </span>' + action.text + '</p>');
+      break;
+
+    case "getVideoAudio":
+      getUserMedia(constraints, handleUserMedia, handleUserMediaError);
+      break;
+    case "refreshClientsList":
+      clientsList.html(action.text);
+      break;
+
+    default:
+      // todo
+      break;
+  }
+
 }
 
 function handleReceiveChannelStateChange() {
@@ -189,17 +214,23 @@ function handleReceiveChannelStateChange() {
 
 function enableMessageInterface(shouldEnable) {
   if (shouldEnable) {
-    dataChannelSend.disabled = false;
-    dataChannelSend.focus();
-    dataChannelSend.placeholder = "";
+    txtInput.removeAttr('disabled');
+    txtInput.focus();
+    txtInput.placeholder = "";
     sendButton.prop("disabled", false);
     login.hide();
   } else {
-    dataChannelSend.disabled = true;
+    txtInput.attr('disabled', 'disabled');
     sendButton.prop("disabled", true);
     login.show();
   }
 }
+
+txtInput.keyup(function(e) {
+  if(e.keyCode == 13)  {
+    sendButton.click();
+  }
+});
 
 function handleIceCandidate(event) {
   log('handleIceCandidate event: ', event);

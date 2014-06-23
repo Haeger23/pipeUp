@@ -34,14 +34,11 @@ button {
     height: 150px;
 }
 
-#dataChannelSend, #chatContent {
+#txtInput, #chatContent {
     border: 1px solid lightgray;
     width: 93%;
     float: right;
     padding: 3px 10px;
-}
-
-#dataChannelSend {
 }
 
 #sendButton {
@@ -111,6 +108,13 @@ button {
     border: 1px solid #D3D3D3;
     padding: 5px 10px;
     margin: 0;
+}
+
+#clients li{
+    padding-left: 15px;
+}
+#clients li.pipedUp{
+    background: transparent url(../images/pipedUp.png) left center no-repeat;
 }
 
 #login {

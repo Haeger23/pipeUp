@@ -93,41 +93,75 @@ function PipeUpHost() {
 ////////////////////////////////////////////////////////////
 
 var Peers = function (parent) {
+  // private
   var self = this,
       pipeUpContext = parent,
       list = new Array(),
       peerColor = 1;
 
-  this.getList = function () {
-
+  var getNewColorForPeer = function () {
+    if (peerColor == 10)
+      peerColor = 0;
+    return 'color' + peerColor++;
   }
 
+  var deletePeer = function (socketId) {
+    for (var position in list) {
+      if (list[position].getSocketId() === socketId) {
+        delete list[position];
+        return true;
+        break;
+      }
+    }
+    return false;
+  }
+
+  // public
   this.addPeer = function (conf) {
     conf.color = getNewColorForPeer();
     var peer = new Peer(conf, pipeUpContext, self);
     peer.createConnection();
     // save peer in list object
-    list[conf.socketId] = peer;
+    list.push(peer);
+    self.onListChanged();
   }
 
   this.getPeer = function (socketId) {
-    return list[socketId];
+    for (var position in list) {
+      if (list[position].getSocketId() === socketId) {
+        return list[position];
+        break;
+      }
+    }
+    return null;
   }
   this.getPeers = function () {
     return list;
   }
+
+  this.getPeerPosition = function (socketId) {
+    for (var position in list) {
+      if (list[position].getSocketId() === socketId) {
+        return position;
+        break;
+      }
+    }
+    return false;
+  }
+
   this.getPeerUsername = function (socketId) {
-    return list[socketId].socketConf.username;
+    return this.getPeer(socketId).getUsername();
   }
   this.getPeerColor = function (socketId) {
     return list[socketId].socketConf.Color;
   }
 
-  this.closePeer = function (peer) {
-    self.onClosePeer(peer);
+  this.closePeer = function (socketId) {
+    var peer = self.getPeer(socketId);
     peer.close();
     log('Peer closed: ' + peer.getUsername());
-    delete list[peer.getSocketId()];
+    deletePeer(socketId);
+    self.onListChanged();
   }
 
   this.closeAllPeers = function () {
@@ -138,32 +172,47 @@ var Peers = function (parent) {
     log('Session closed.');
   }
 
-  // Moves an Item to the top or right after the last piped up item
-  this.pipeUp = function (item) {
-    //for ()
-    list.splice(2, 0, item); // copy
-    list.splice(3, 1); // delete
+  // Moves an Item to the top or right after the last piped up peer
+  // is also used for unsetting the pipeUp mark
+  this.pipeUp = function (socketId, stop) {
+    for (var newIndex in list){
+      if (!list[newIndex].pipedUp) {
+        var oldIndex = self.getPeerPosition(socketId);
+        if (oldIndex) {
+          list[oldIndex].pipedUp = (stop) ? false : true;
+          list.splice(newIndex, 0, list.splice(oldIndex, 1)[0]); // move item
+          break;
+        }
+      }
+    }
+    self.onListChanged();
+  }
+
+  this.stopPipeUp = function (socketId) {
+    this.pipeUp(socketId, true);
   }
 
   this.sendGlobalTxtMsg = function (message, sender) {
     for (var peer in list) {
-      list[peer].sendTxtMsg(message, sender);
+      list[peer].sendAction('message', message, sender);
     }
 
     log('Sent Message to everybody');
   }
 
-  //////
-
-  this.onClosePeer = function () { return null };
-
-  //////
-
-  var getNewColorForPeer = function () {
-    if (peerColor == 10)
-      peerColor = 0;
-    return 'color' + peerColor++;
+  this.refreshClientsListGlobal = function (html) {
+    for (var peer in list) {
+      list[peer].sendAction('refreshClientsList', html);
+    }
+    log('Refreshed List Global');
   }
+
+  //////////////////// Trigger Functions /////////////
+
+  this.onListChanged = function () {};
+
+  ////////////////////////////////////////////////////
+
 }
 
 ////////////////////////////////////////////////////////////
@@ -171,14 +220,14 @@ var Peers = function (parent) {
 ////////////////////////////////////////////////////////////
 
 function Peer(conf, pipeUpContext, peersContext) {
+  // private
   var self = this,
       pc = null,
       sendChannel = null,
       socketConf = conf,
-      pipedUp = false,
       userListItem = null, // saves the DomElement (li) of connected users list for this peer
       constraints = {audio: true, video: true},
-      pc_config = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
+      pc_config = {'iceServers': [{'url': 'stun:stun.l.google.om:19302'}]},
       pc_constraints = {
         'optional': [
           {'DtlsSrtpKeyAgreement': true},
@@ -193,6 +242,8 @@ function Peer(conf, pipeUpContext, peersContext) {
         }
       };
 
+  // public
+  self.pipedUp = false;
   /////////////// Connection Funktions ////////////////////
 
   this.createConnection = function () {
@@ -224,10 +275,10 @@ function Peer(conf, pipeUpContext, peersContext) {
 
   this.createSendChannel = function () {
     sendChannel = pc.createDataChannel(self.getSocketId(), {reliable: true});
-    sendChannel.onmessage = self.handleChatMessage;
+    sendChannel.onmessage = self.handleAction;
     log('Created send data channel');
 
-    sendChannel.onopen = pipeUpContext.onPeerAdded(self);;
+    sendChannel.onopen = pipeUpContext.onPeerAdded(self);
     sendChannel.onclose = function () {
       log('Send channel state is: closed');
     };
@@ -235,7 +286,7 @@ function Peer(conf, pipeUpContext, peersContext) {
   this.createOffer = function () {
     var constraints = {'optional': [], 'mandatory': {}};
 
-    constraints = self.mergeConstraints(constraints, sdpConstraints);
+    constraints = mergeConstraints(constraints, sdpConstraints);
     log('Sending offer to peer, with constraints: \n' +
       '  \'' + JSON.stringify(constraints) + '\'.');
     pc.createOffer(function (sessionDescription) {
@@ -246,9 +297,24 @@ function Peer(conf, pipeUpContext, peersContext) {
     }, this.onError, constraints);
   }
 
-  this.handleChatMessage = function (event) {
-    peersContext.sendGlobalTxtMsg(event.data, self.getSocketId());
-    pipeUpContext.onChatMessageReceive(self, event.data);
+  this.handleAction = function (event) {
+    var action = JSON.parse(event.data);
+    switch (action.type)
+    {
+      case "message":
+        peersContext.sendGlobalTxtMsg(action.text, self.getSocketId());
+        pipeUpContext.onChatMessageReceive(self, action.text);
+        break;
+
+      case "pipeUp":
+        peersContext.pipeUp(self.getSocketId());
+        break;
+
+      default:
+        // todo
+        break;
+    }
+
   };
 
   this.handleRemoteStreamAdded = function (event) {
@@ -274,15 +340,18 @@ function Peer(conf, pipeUpContext, peersContext) {
     log('RemoteDescription set.');
   }
 
-  this.sendTxtMsg = function (message, sender) {
+  this.sendAction = function (action, content, sender) {
     var msg = JSON.stringify({
-      type: "message",
-      text: message,
+      type: action,
+      text: (content) ? content : '',
       socketConf: (!sender) ? pipeUpContext.getHqSocketConf() : peersContext.getPeer(sender).getSocketConf()
     });
-
-    sendChannel.send(msg);
+    if (sendChannel.readyState === 'open')
+      sendChannel.send(msg);
+    else
+      log('SendChannel of ' + self.getUsername() + ' is not open.')
   }
+
   //////////////////// Trigger Functions /////////////
 
 
@@ -316,7 +385,7 @@ function Peer(conf, pipeUpContext, peersContext) {
     pc = null;
   }
 
-  this.mergeConstraints = function (cons1, cons2) {
+  var mergeConstraints = function (cons1, cons2) {
     var merged = cons1;
     for (var name in cons2.mandatory) {
       merged.mandatory[name] = cons2.mandatory[name];
@@ -324,6 +393,7 @@ function Peer(conf, pipeUpContext, peersContext) {
     merged.optional.concat(cons2.optional);
     return merged;
   }
+
   // Set Opus as the default audio codec if it's present.
   var preferOpus = function (sdp) {
     var sdpLines = sdp.split('\r\n');
