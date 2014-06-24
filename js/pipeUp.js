@@ -8,8 +8,8 @@ function PipeUpHost() {
   // private
   var self = this,
       room = 'pipeUp',
-      localStream,
-      remoteStream,
+      localStream = null,
+      //remoteStream = null,
       hqSocketConf = {
         username: 'hq',
         color: 'color0',
@@ -30,8 +30,8 @@ function PipeUpHost() {
     hqSocketConf.socketId = this.socket.sessionid;
   });
 
-  socket.on('denied', function (room){
-    log('denied - room ' + room + ' already exists');
+  socket.on('renew', function (room){
+    log('room: ' + room + ' renewed');
   });
 
   socket.on('joined', function (conf){
@@ -73,10 +73,6 @@ function PipeUpHost() {
       socket.emit('messageTo', message, receiver);
     else
       socket.emit('message', message);
-  }
-
-  this.getSpeaker = function (peer) {
-    self.sendSocketMessage('getVideo', peer.getSocketId());
   }
 
   this.getHqSocketConf = function () {
@@ -225,9 +221,8 @@ function Peer(conf, pipeUpContext, peersContext) {
       pc = null,
       sendChannel = null,
       socketConf = conf,
-      userListItem = null, // saves the DomElement (li) of connected users list for this peer
       constraints = {audio: true, video: true},
-      pc_config = {'iceServers': [{'url': 'stun:stun.l.google.om:19302'}]},
+      pc_config = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
       pc_constraints = {
         'optional': [
           {'DtlsSrtpKeyAgreement': true},
@@ -310,6 +305,10 @@ function Peer(conf, pipeUpContext, peersContext) {
         peersContext.pipeUp(self.getSocketId());
         break;
 
+      case "renewClientList":
+        peersContext.onListChanged();
+        break;
+
       default:
         // todo
         break;
@@ -320,7 +319,7 @@ function Peer(conf, pipeUpContext, peersContext) {
   this.handleRemoteStreamAdded = function (event) {
     log('Remote stream added.');
     attachMediaStream(remoteVideo, event.stream);
-    remoteStream = event.stream;
+    //remoteStream = event.stream;
   }
   this.handleRemoteStreamRemoved = function (event) {
     log('Remote stream removed. Event: ', event);

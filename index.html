@@ -8,46 +8,50 @@
 
     <body>
 
-    <div id='container'>
-
-        <div id='videos' class="invis">
+        <div id="userIdent">
+            <div class="name"></div>
             <video id='localVideo' autoplay muted></video>
-            <video id='remoteVideo' autoplay></video>
         </div>
 
-        <div id="login">
-            <div class="elements">
-                <label for="username">Benutzername</label>
-                <input type="text" name="username" id="username" value="Hans">
-                <button id="loginBtn">Anmelden</button>
-            </div>
-        </div>
+        <div id="container">
 
-        <div id="controls">
-            <button id="pipeUp">PipeUp!</button>
-            <button id="disconnect">Abmelden</button>
-        </div>
-        <div class="content">
-            <ul id="clients">
-            </ul>
-            <div id="chat">
-
-                <div id="chatContent">
+            <div id="remote">
+                <video id="remoteVideo" autoplay></video>
+                <div id="controls">
+                    <button id="pipeUp">PipeUp!</button>
+                    <button id="disconnect">Abmelden</button>
                 </div>
-
-                <input type="text" id="txtInput" disabled>
-
-                <button id="sendButton" disabled>Nachricht senden</button>
             </div>
+
+            <div id="login">
+                <div class="elements">
+                    <label for="username">Benutzername</label>
+                    <input type="text" name="username" id="username" value="Hans">
+                    <button id="loginBtn">Anmelden</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <ul id="clients">
+                </ul>
+                <div id="chat">
+
+                    <div id="chatContent">
+                    </div>
+
+                    <input type="text" id="txtInput" disabled>
+
+                    <button id="sendButton" disabled>Nachricht senden</button>
+                </div>
+            </div>
+
         </div>
 
-    </div>
 
-
-    <script src='js/lib/jquery-2.1.1.min.js'></script>
-    <script src='js/lib/socket.io.js'></script>
-    <script src='js/lib/adapter.js'></script>
-    <script src='js/client.js'></script>
+        <script src='js/lib/jquery-2.1.1.min.js'></script>
+        <script src='js/lib/socket.io.js'></script>
+        <script src='js/lib/adapter.js'></script>
+        <script src='js/client.js'></script>
 
     </body>
 </html>

@@ -4,7 +4,8 @@
 // No need for giving around a microphone anymore.
 
 var sendButton =  $("#sendButton"),
-    closeButton =  $("#closeButton"),
+    speakButton = $('#speak'),
+    stopButton = $('#stop'),
     txtInput =   $("#txtInput"),
     chatContent = $("#chatContent"),
     clientsList = $("#clients"),
@@ -35,13 +36,17 @@ pipeUp.peers.onListChanged = function () {
       pipedUp = 'pipedUp '
 
     html += '<li data-peer="' + conf.socketId + '" class="' + pipedUp + conf.color + '">' + conf.username + '</li>';
-    peer.userListItem = $('li[data-peer="' + conf.socketId + '"]');
-    peer.userListItem.click(function () {
-      log('ask speaker to speak: ' + conf.username);
-      pipeUp.getSpeaker(peer);
-    });
   }
   clientsList.append(html);
+
+
+  $('ul#clients li').click(function () {
+    $('ul#clients li').removeClass('selected');
+    $(this).toggleClass('selected');
+    changeUser($(this).data('peer'));
+  });
+
+
   // refreshing the clients list on the clients
   this.refreshClientsListGlobal(html);
 }
@@ -69,11 +74,6 @@ sendButton.click(function() {
   txtInput.val('');
 });
 
-closeButton.click(function(e) {
-  pipeUp.close();
-  location.reload();
-});
-
 txtInput.keyup(function(e) {
   if(e.keyCode == 13)  {
     sendButton.click();
@@ -91,6 +91,39 @@ function enableMessageInterface(shouldEnable) {
     sendButton.prop("disabled", true);
   }
 }
+
+function changeUser(socketId) {
+  if (socketId) {
+    $('#remote #controls .name').html(pipeUp.peers.getPeer(socketId).getUsername());
+    speakButton.data('peer', socketId);
+    stopButton.data('peer', socketId);
+    $('#remote').css('visibility', 'visible');
+  } else {
+    $('#remote').css('visibility', 'hidden');
+  }
+}
+
+speakButton.click(function() {
+  var socketId = $('#speak').data('peer');
+
+  $(this).prop("disabled", true);
+  stopButton.prop("disabled", false);
+
+  log('ask speaker to speak: ' + socketId);
+  pipeUp.peers.getPeer(socketId).sendAction('getVideoAudio');
+
+});
+
+stopButton.click(function() {
+  var socketId = $('#stop').data('peer');
+
+  $(this).prop("disabled", true);
+  speakButton.prop("disabled", false);
+
+  pipeUp.peers.getPeer(socketId).sendAction('stopVideoAudio');
+  log('stop speaker: ' + socketId);
+});
+
 
 
 /////////////////////////////////////////////////////

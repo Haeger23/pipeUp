@@ -7,7 +7,7 @@ var static = require('node-static'),
     file = new(static.Server)(),
     app = http.createServer(function (req, res) {
             file.serve(req, res);
-          }).listen(2013);
+          }).listen(process.env.PORT || 2013);
 
 var io = require('socket.io').listen(app),
     roomName = null;
@@ -16,14 +16,11 @@ io.sockets.on('connection', function (socket){
 
   socket.on('create', function (room) {
     roomName = room;
-    if (!masterSocket.id){
-      socket.join(room);
-      masterSocket.id = socket.id;
-      log('Master created room.');
-      io.sockets.socket(masterSocket.id).emit('created', roomName);
-    } else {
-      io.sockets.socket(masterSocket.id).emit('denied', roomName);
-    }
+    socket.join(room);
+
+    masterSocket.id = socket.id;
+    log('Master created room.');
+    io.sockets.socket(masterSocket.id).emit('created', roomName);
   });
 
   socket.on('join', function (conf) {

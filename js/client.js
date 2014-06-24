@@ -1,13 +1,13 @@
 "use strict";
 
-var sendButton = $("#sendButton"),
-    txtInput = $("#txtInput"),
+var sendButton = $('#sendButton'),
+    txtInput = $('#txtInput'),
     login = $('#login'),
-    chatContent = $("#chatContent"),
-    loginBtn = $("#loginBtn"),
-    pipeUpBtn = $("#pipeUp"),
-    clientsList = $("#clients"),
-    disconnectBtn = $("#disconnect");
+    chatContent = $('#chatContent'),
+    loginBtn = $('#loginBtn'),
+    pipeUpBtn = $('#pipeUp'),
+    clientsList = $('#clients'),
+    disconnectBtn = $('#disconnect');
 
 var pcIsAlreadyCreated,
     localStream,
@@ -37,10 +37,16 @@ var socket = io.connect(),
     localSocketId;
 
 
+////////////////// Frontend //////////////////
+
+
 sendButton.click(sendChatMessage);
 
-
-/////////////////////////////////////////////
+txtInput.keyup(function(e) {
+  if(e.keyCode == 13)  {
+    sendButton.click();
+  }
+});
 
 loginBtn.click(function() {
   log('join room', room);
@@ -49,6 +55,24 @@ loginBtn.click(function() {
     room: room,
     username: $("#username").val()});
 });
+
+
+function enableMessageInterface(shouldEnable) {
+  if (shouldEnable) {
+    txtInput.removeAttr('disabled');
+    txtInput.focus();
+    txtInput.placeholder = "";
+    sendButton.prop("disabled", false);
+    sendAction('renewClientList');
+    login.hide();
+  } else {
+    txtInput.attr('disabled', 'disabled');
+    sendButton.prop("disabled", true);
+    login.show();
+  }
+}
+
+/////////////////////////////////////////////
 
 pipeUpBtn.click(function() {
   sendAction('pipeUp');
@@ -73,6 +97,7 @@ socket.on('joined', function (conf){
   log('This peer has joined room ' + conf.roomName);
   masterSocketId = conf.masterSocket;
   localSocketId = socket.socket.sessionid;
+  $('#userIdent .name').html($("#username").val());
 });
 
 socket.on('log', function (array){
@@ -147,8 +172,9 @@ function createPeerConnection() {
     '  config: \'' + JSON.stringify(pc_config) + '\';\n' +
     '  constraints: \'' + JSON.stringify(pc_constraints) + '\'.');
   pc.oniceconnectionstatechange = function () {
-    log('IceConnectionStateChanged: '+ this.iceConnectionState);
-  }
+                                    if (this.iceConnectionState === 'disconnected')
+                                      closePeerConnection();
+                                  }
   pc.onaddstream = handleRemoteStreamAdded;
   pc.onremovestream = handleRemoteStreamRemoved;
 
@@ -173,12 +199,12 @@ function sendAction(action, content) {
 function gotReceiveChannel(event) {
   log('Receive Channel Callback');
   sendChannel = event.channel;
-  sendChannel.onmessage = handleMessage;
+  sendChannel.onmessage = handleAction;
   sendChannel.onopen = handleReceiveChannelStateChange;
   sendChannel.onclose = handleReceiveChannelStateChange;
 }
 
-function handleMessage(event) {
+function handleAction(event) {
   var action = JSON.parse(event.data);
 
   log('Received Action: ' + action.text);
@@ -194,6 +220,9 @@ function handleMessage(event) {
 
     case "getVideoAudio":
       getUserMedia(constraints, handleUserMedia, handleUserMediaError);
+      break;
+    case "stopVideoAudio":
+      localStream.stop();
       break;
     case "refreshClientsList":
       clientsList.html(action.text);
@@ -211,26 +240,6 @@ function handleReceiveChannelStateChange() {
   log('Receive channel state is: ' + readyState);
   enableMessageInterface(readyState == "open");
 }
-
-function enableMessageInterface(shouldEnable) {
-  if (shouldEnable) {
-    txtInput.removeAttr('disabled');
-    txtInput.focus();
-    txtInput.placeholder = "";
-    sendButton.prop("disabled", false);
-    login.hide();
-  } else {
-    txtInput.attr('disabled', 'disabled');
-    sendButton.prop("disabled", true);
-    login.show();
-  }
-}
-
-txtInput.keyup(function(e) {
-  if(e.keyCode == 13)  {
-    sendButton.click();
-  }
-});
 
 function handleIceCandidate(event) {
   log('handleIceCandidate event: ', event);

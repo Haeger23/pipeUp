@@ -1,0 +1,32 @@
+{
+  "name": "pipeUp",
+  "version": "0.0.1",
+  "description": "WebRTC - PipeUp",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Haeger23/pipeUp.git"
+  },
+  "keywords": [
+    "webrtc",
+    "javascript",
+    "realtime"
+  ],
+  "author": "Willi Kampe",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Haeger23/pipeUp/issues"
+  },
+  "homepage": "https://github.com/Haeger23/pipeUp",
+  "dependencies": {
+    "node-static": "^0.7.3",
+    "socket.io": "^0.9.16"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
+}

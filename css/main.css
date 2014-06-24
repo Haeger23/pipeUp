@@ -13,6 +13,10 @@ button {
     width: 120px;
 }
 
+button:hover {
+    cursor: pointer;
+}
+
 .content{
     width: 100%;
     height: 300px;
@@ -23,15 +27,43 @@ button {
     width: 69%;
 }
 
-#videos {
+#remote {
+    position: relative;
     text-align: center;
     margin-bottom: 15px;
+    margin-left: 200px;
+}
+
+.host #remote {
+    visibility: hidden;
+}
+
+#remote #controls {
+    margin: 5px 0 25px 0;
+}
+
+#remote #controls .name {
+    position: absolute;
+    font-size: 20px;
+    color: lightgray;
+    top: 165px;
+    left: 50%;
+
 }
 
 #localVideo ,#remoteVideo {
     right: 0px;
     margin: 0 auto;
-    height: 150px;
+}
+
+#localVideo {
+    height: 80px;
+}
+
+#remoteVideo {
+    height: 180px;
+    border: 1px solid #D3D3D3;
+    margin-top: 10px;
 }
 
 #txtInput, #chatContent {
@@ -111,10 +143,19 @@ button {
 }
 
 #clients li{
-    padding-left: 15px;
+    padding: 3px 0 5px 15px;
 }
+
+#clients li.selected{
+    background: lightgray;
+}
+
 #clients li.pipedUp{
     background: transparent url(../images/pipedUp.png) left center no-repeat;
+}
+
+.host #clients li:hover {
+    cursor: pointer;
 }
 
 #login {
@@ -157,4 +198,12 @@ button {
 
 .invis {
     display: none;
+}
+
+div#userIdent {
+    position: absolute;
+    color: lightgray;
+    font-size: 35px;
+    top: 20px;
+    left: 2%;
 }
