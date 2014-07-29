@@ -16,4 +16,4 @@ System Requirements
 
 Node.js with socket.io (v.0.9.16) and node-static (v.0.7.3)
 
-[docu](https://github.com/Haeger23/pipeUp/blob/master/doc/developer_doc.md "my")
+[docu](doc/developer_doc.md)
