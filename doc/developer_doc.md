@@ -1,17 +1,14 @@
-pipeUp
+pipeUp - Entwicklerdokumentation
 ======
 
-WebRTC Project for a better UX in Q&amp;A sessions after presentations. No need for giving around a microphone anymore.
+## Installation
 
-Heroku
-======
+## Heroku
+Für Testzwecke wurde heroku eingesetzt.
+www.heroku.com
 
-For testing I used Heroku www.heroku.com
-
-This should help to set up your own environnement:
+Gute Anleitung zum Aufsetzen einer eigenen Testumgebung:
 https://devcenter.heroku.com/articles/getting-started-with-nodejs
 
-System Requirements
-======
-
-Node.js with socket.io (v.0.9.16) and node-static (v.0.7.3)
+## System Requirements
+Node.js mit socket.io (v.0.9.16) und node-static (v.0.7.3)
