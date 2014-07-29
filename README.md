@@ -15,3 +15,5 @@ System Requirements
 ======
 
 Node.js with socket.io (v.0.9.16) and node-static (v.0.7.3)
+
+[docu](doc/developer_doc.md)
