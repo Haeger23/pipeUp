@@ -1,7 +1,7 @@
 pipeUp
 ======
 
-WebRTC Project for a better UX in Q&amp;A sessions after presentations. No need for giving around a microphone anymore.
+WebRTC based Q&A Support for Presentations. No need for handing round a microphone anymore.
 
 Heroku
 ======
