@@ -1,7 +1,7 @@
 pipeUp
 ======
 
-WebRTC based Q&A Support for Live-Events. This prototype demonstrates the functionality of WebRTC to solve problems which come up by passing around a microphone during question and answer sessions. 
+WebRTC based Q&A Support for Live-Events. This prototype demonstrates the functionality of WebRTC to solve problems, which come up by passing around a microphone during question and answer sessions. 
 
 ### Detailed Informations
 For more detailed informations look at my thesis:<br>
