@@ -216,6 +216,10 @@ function handleAction(event) {
       chatContent.append('<p ' + myself + ' data-peer="' + action.socketConf.socketId +
         '"><span class="' + action.socketConf.color +
         '">' + action.socketConf.username + ': </span>' + action.text + '</p>');
+
+      chatContent.scrollTop(
+        chatContent[0].scrollHeight - chatContent.height()
+      );
       break;
 
     case "getVideoAudio":
@@ -265,6 +269,8 @@ function handleRemoteStreamRemoved(event) {
 
 function closePeerConnection() {
   sendMessage('close');
+  if (localStream)
+    localStream.stop();
   pcIsAlreadyCreated = false;
   pc.close();
   pc = null;

@@ -9,7 +9,7 @@ function PipeUpHost() {
   var self = this,
       room = 'pipeUp',
       localStream = null,
-      //remoteStream = null,
+      remoteStream = null,
       hqSocketConf = {
         username: 'hq',
         color: 'color0',
@@ -18,11 +18,10 @@ function PipeUpHost() {
       socket = io.connect();
 
   // public
-  this.peers = new Peers(self); // storage for connected peers
+  this.peers = new Peers(self); // manages connected peers
 
   log('Create room', room);
   socket.emit('create', room);
-
 
   socket.on('created', function (room){
     log('Created room ' + room);
@@ -83,7 +82,21 @@ function PipeUpHost() {
     self.peers.closeAllPeers();
     socket.emit('close room');
   }
+
+  this.setLocalStream = function (stream) {
+    self.localStream = stream;
+  }
+  this.getLocalStream = function () {
+    return self.localStream;
+  }
+  this.setRemoteStream = function (stream) {
+    self.remoteStream = stream;
+  }
+  this.getRemoteStream = function () {
+    return self.remoteStream;
+  }
 }
+
 ////////////////////////////////////////////////////////////
 /////////////// Peers Object ///////////////////////////////
 ////////////////////////////////////////////////////////////
@@ -221,7 +234,8 @@ function Peer(conf, pipeUpContext, peersContext) {
       pc = null,
       sendChannel = null,
       socketConf = conf,
-      constraints = {audio: true, video: true},
+      localStream = null,
+      //constraints = {audio: true, video: true},
       pc_config = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
       pc_constraints = {
         'optional': [
@@ -231,6 +245,7 @@ function Peer(conf, pipeUpContext, peersContext) {
       },
       // Set up audio and video regardless of what devices are present.
       sdpConstraints = {
+        'optional': [],
         'mandatory': {
           'OfferToReceiveAudio':true,
           'OfferToReceiveVideo':true
@@ -250,7 +265,8 @@ function Peer(conf, pipeUpContext, peersContext) {
           type: 'candidate',
           label: event.candidate.sdpMLineIndex,
           id: event.candidate.sdpMid,
-          candidate: event.candidate.candidate}, self.getSocketId());
+          candidate: event.candidate.candidate
+        }, self.getSocketId());
       } else {
         log('End of candidates.');
       }
@@ -278,16 +294,22 @@ function Peer(conf, pipeUpContext, peersContext) {
       log('Send channel state is: closed');
     };
   }
+
   this.createOffer = function () {
-    var constraints = {'optional': [], 'mandatory': {}};
+    var constraints = { 'mandatory': {}};
 
     constraints = mergeConstraints(constraints, sdpConstraints);
     log('Sending offer to peer, with constraints: \n' +
       '  \'' + JSON.stringify(constraints) + '\'.');
+
+    if (localStream)
+      pc.addStream(localStream);
+
     pc.createOffer(function (sessionDescription) {
       // Set Opus as the preferred codec in SDP if Opus is present.
       sessionDescription.sdp = preferOpus(sessionDescription.sdp);
       pc.setLocalDescription(sessionDescription);
+      // send Offer to Client
       pipeUpContext.sendSocketMessage(sessionDescription, self.getSocketId());
     }, this.onError, constraints);
   }
@@ -319,7 +341,7 @@ function Peer(conf, pipeUpContext, peersContext) {
   this.handleRemoteStreamAdded = function (event) {
     log('Remote stream added.');
     attachMediaStream(remoteVideo, event.stream);
-    //remoteStream = event.stream;
+    pipeUpContext.setRemoteStream(event.stream);
   }
   this.handleRemoteStreamRemoved = function (event) {
     log('Remote stream removed. Event: ', event);
@@ -327,7 +349,9 @@ function Peer(conf, pipeUpContext, peersContext) {
 
   var onIceConnectionStateChange = function () {
     log(self.getUsername() + ': IceConnectionStateChanged: '+ this.iceConnectionState);
-
+    if (this.iceConnectionState === 'disconnected') {
+      pipeUpContext.peers.closePeer(self.getSocketId());
+    }
   }
   this.addIceCandidate = function (msg) {
     var candidate = new RTCIceCandidate({sdpMLineIndex:msg.label, candidate:msg.candidate});
@@ -351,13 +375,19 @@ function Peer(conf, pipeUpContext, peersContext) {
       log('SendChannel of ' + self.getUsername() + ' is not open.')
   }
 
-  //////////////////// Trigger Functions /////////////
-
+  this.setRemoteVideo = function (stream) {
+    if (stream) {
+      localStream = stream;
+      self.createOffer();
+    } else {
+      log('no Stream set.');
+    }
+  }
 
   /////////////// Helper Funktions ////////////////////
 
   this.onError = function (err) {
-    // todo Problem mit Firefox: dieser braucht diese Fkt aber so richtig funktioniert das immer noch nicht
+    // todo Problem mit Firefox: dieser braucht diese Fkt
     // https://bitbucket.org/webrtc/codelab/issue/9/call-from-firefox-to-chrome-does-not-work
     log('Fehler in createOffer: ' + err);
   }
@@ -377,7 +407,6 @@ function Peer(conf, pipeUpContext, peersContext) {
   this.getSocketConf = function () {
     return socketConf;
   }
-
 
   this.close = function () {
     pc.close();

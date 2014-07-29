@@ -58,6 +58,7 @@ button:hover {
 
 #localVideo {
     height: 80px;
+    border: 1px solid #D3D3D3;
 }
 
 #remoteVideo {
@@ -206,4 +207,16 @@ div#userIdent {
     font-size: 35px;
     top: 20px;
     left: 2%;
+    text-align: center;
+    width: 180px;
+}
+
+div#userIdent .name{
+    color: lightgray;
+    font-size: 35px;
+    margin-bottom: 10px;
+}
+
+div#userIdent button{
+    width: 75px;
 }

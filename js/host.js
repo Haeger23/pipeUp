@@ -5,12 +5,18 @@
 
 var sendButton =  $("#sendButton"),
     speakButton = $('#speak'),
+    sendLocalVideoButton = $('#sendLocalVideo'),
+    sendRemoteVideoButton = $('#sendRemoteVideo'),
     stopButton = $('#stop'),
     txtInput =   $("#txtInput"),
     chatContent = $("#chatContent"),
     clientsList = $("#clients"),
+    getLocalVideo = $('#getLocalVideo'),
     localVideo = document.querySelector('#localVideo'),
-    remoteVideo = document.querySelector('#remoteVideo');
+    remoteVideo = document.querySelector('#remoteVideo'),
+    currentSelectedUser = null,
+
+    localStream = null;
 
 var pipeUp = new PipeUpHost();
 
@@ -20,6 +26,7 @@ pipeUp.onPeerAdded = function (peer) {
   //this.peers.refreshClientsListGlobal(clientsList.html());
 }
 
+// fires when something has been changed in user list e.g. new user arrived
 pipeUp.peers.onListChanged = function () {
   var peers = this.getPeers(),
       html = '';
@@ -51,6 +58,17 @@ pipeUp.peers.onListChanged = function () {
   this.refreshClientsListGlobal(html);
 }
 
+// fires when user in user list has been clicked
+function changeUser(socketId) {
+  if (socketId) {
+    $('#remote #controls .name').html(pipeUp.peers.getPeer(socketId).getUsername());
+    currentSelectedUser = socketId;
+    $('#remote').css('visibility', 'visible');
+  } else {
+    $('#remote').css('visibility', 'hidden');
+  }
+}
+
 pipeUp.onChatMessageReceive = function (peer, msg) {
   log('Received message: ' + msg);
   var myself = (!peer) ? 'class="myself"' : '';
@@ -63,7 +81,19 @@ pipeUp.onChatMessageReceive = function (peer, msg) {
                 pipeUp.getHqSocketConf().username + ':</span> ' + msg + '</p>');
   }
 
+  chatContent.scrollTop(
+    chatContent[0].scrollHeight - chatContent.height()
+  );
+
 }
+
+sendLocalVideoButton.click(function() {
+  pipeUp.peers.getPeer(currentSelectedUser).setRemoteVideo(pipeUp.getLocalStream());
+});
+
+sendRemoteVideoButton.click(function() {
+  pipeUp.peers.getPeer(currentSelectedUser).setRemoteVideo(pipeUp.getRemoteStream());
+});
 
 sendButton.click(function() {
   var msg = txtInput.val();
@@ -92,37 +122,38 @@ function enableMessageInterface(shouldEnable) {
   }
 }
 
-function changeUser(socketId) {
-  if (socketId) {
-    $('#remote #controls .name').html(pipeUp.peers.getPeer(socketId).getUsername());
-    speakButton.data('peer', socketId);
-    stopButton.data('peer', socketId);
-    $('#remote').css('visibility', 'visible');
-  } else {
-    $('#remote').css('visibility', 'hidden');
-  }
-}
+
 
 speakButton.click(function() {
-  var socketId = $('#speak').data('peer');
-
-  $(this).prop("disabled", true);
-  stopButton.prop("disabled", false);
-
-  log('ask speaker to speak: ' + socketId);
-  pipeUp.peers.getPeer(socketId).sendAction('getVideoAudio');
-
+  log('ask speaker to speak: ' + currentSelectedUser);
+  pipeUp.peers.getPeer(currentSelectedUser).sendAction('getVideoAudio');
 });
 
 stopButton.click(function() {
-  var socketId = $('#stop').data('peer');
+  //$(this).prop("disabled", true);
+  //speakButton.prop("disabled", false);
 
-  $(this).prop("disabled", true);
-  speakButton.prop("disabled", false);
-
-  pipeUp.peers.getPeer(socketId).sendAction('stopVideoAudio');
-  log('stop speaker: ' + socketId);
+  pipeUp.peers.getPeer(currentSelectedUser).sendAction('stopVideoAudio');
+  log('stop speaker: ' + currentSelectedUser);
 });
+
+// get Local Media and bind it to PipeUpHost
+
+getLocalVideo.click(function() {
+  var constraints = {audio: true, video: true};
+  getUserMedia(constraints, handleUserMedia, handleUserMediaError);
+});
+
+function handleUserMedia(stream) {
+  pipeUp.setLocalStream(stream);
+  attachMediaStream(localVideo, stream);
+  log('Adding local stream.');
+}
+
+function handleUserMediaError(error){
+  log('getUserMedia error: ', error);
+}
+
 
 
 

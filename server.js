@@ -1,13 +1,13 @@
 var static = require('node-static'),
     http = require('http'),
-    masterSocket = {
-      id: null,
-      name: 'pipeUpMaster'
-    },
     file = new(static.Server)(),
     app = http.createServer(function (req, res) {
             file.serve(req, res);
-          }).listen(process.env.PORT || 2013);
+          }).listen(process.env.PORT || 2013),
+    masterSocket = {
+      id: null,
+      name: 'pipeUpMaster'
+    };
 
 var io = require('socket.io').listen(app),
     roomName = null;
@@ -28,7 +28,7 @@ io.sockets.on('connection', function (socket){
       var numClients = io.sockets.clients(roomName).length;
       log('numClients: ', numClients);
 
-      if (masterSocket.id) {
+      if (masterSocket.id) { // masterSocket has to be present
         socket.join(roomName);
         io.sockets.socket(socket.id).emit('joined', {
           roomName: roomName,
