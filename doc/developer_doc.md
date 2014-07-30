@@ -1,8 +1,6 @@
 pipeUp - Entwicklerdokumentation
 ======
 
-## Installation
-
 ## Heroku
 Für Testzwecke wurde heroku eingesetzt.
 www.heroku.com
